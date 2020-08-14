@@ -2,6 +2,7 @@
   <!-- 削除ダイアログ -->
   <v-dialog
     v-model="show"
+    persistent
     max-width="290"
   >
     <v-card>
