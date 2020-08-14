@@ -1,0 +1,226 @@
+<template>
+  <div>
+    <v-card>
+      <v-card-title>
+        <!-- 月選択 -->
+        <v-col cols="8">
+          <v-menu
+            ref="menu"
+            v-model="menu"
+            :close-on-content-click="false"
+            :retuen-value.sync="yearMonth"
+            transition="scale-transition"
+            offset-y
+            max-width="290px"
+            min-width="290px"
+          >
+            <template v-slot:activation="{ on }">
+              <v-text-field
+                v-model="yearMonth"
+                prepend-icon="mdi-calendar"
+                readonly
+                v-on="on"
+                hide-detials
+              />
+            </template>
+            <v-date-picker
+              v-model="yearMonth"
+              type="monthe"
+              color="green"
+              locale="ja-jp"
+              no-title
+              scrollable
+            >
+              <v-spacer/>
+              <v-btn text color="grey" @click="menu = false">キャンセル</v-btn>
+              <v-btn text color="primary" @click="$refs.menu.save(yearMonth)">選択</v-btn>
+            </v-date-picker>
+          </v-menu>
+        </v-col>
+        <v-spacer/>
+
+        <!-- 追加ボタン -->
+        <v-col class="text-right" cols="4">
+          <v-btn dark color="green" @click="onClickAdd">
+            <v-icon>mdi-plus</v-icon>
+          </v-btn>
+        </v-col>
+
+        <!-- 検索フォーム -->
+        <v-col cols="12">
+          <!--
+            v-model     : 入力したデータを this.search と同期
+            append-icon : 検索アイコン
+            label       : ラベル名
+            single-line : 1行だけ入力可能
+            hide-details: 文字カウントなどを非表示
+           -->
+          <v-text-field
+            v-model="search"
+            append-icon="mdi-magnify"
+            label="Search"
+            single-line
+            hide-details
+          />
+        </v-col>
+      </v-card-title>
+
+      <!-- テーブル -->
+      <!--
+          class="text-no-wrap"        : 文字を繰り返さないようにするクラス
+          :headers="tableHeaders"     : ヘッダー設定
+          :items="tableData"          : テーブルに表示するデータ
+          :search="search"            : 検索する文字
+          :footer-props="footerProps" : フッター設定
+          :loading="loading"          : ローディング状態
+          :sort-by="'date'"           : ソート初期設定(列名)
+          :sort-desc="true"           : ソート初期設定(降順)
+          :items-per-page="30"        : テーブルに最大何件表示するか
+          mobile-beakpoint="0"        : モバイル表示にさせる画面のサイズ（今回はモバイル表示にさせたくないため、"0"）
+       -->
+      <v-data-table
+        class="text-no-wrap"
+        :headers="tableHeaders"
+        :items="tableData"
+        :search="search"
+        :footer-props="footerProps"
+        :loading="loading"
+        :sort-by="'date'"
+        :sort-desc="true"
+        :items-per-page="30"
+        mobile-beakpoint="0"
+      >
+
+      <!-- 日付列 -->
+      <template v-slot:item.date="{ item }">
+        <!-- この中で、日付は item.date でアクセスできる -->
+        <!-- '2020-06-01' → '1日' に加工 -->
+        {{ parseInt(item.date.slice(-2)) + '日' }}
+      </template>
+
+      <!-- タグ列 -->
+      <template v-slot:item.tags="{ item }">
+        <div v-if="item.tags">
+          <v-chip
+            class="mr-2"
+            v-for="(tag, i) in item.tags.split(',')"
+            :key="i"
+          >
+            {{ tag }}
+          </v-chip>
+        </div>
+      </template>
+
+      <!-- 収入列 -->
+      <template v-slot:item.income="{ item }">
+        {{ separate(item.income) }}
+      </template>
+
+      <!-- タグ列 -->
+      <template v-slot:item.outgo="{ item }">
+        {{ separate(item.outgo) }}
+      </template>
+
+      <!-- 操作列 -->
+      <template v-slot:item.actions="{ item }">
+        <v-icon class="mr-2" @click="onClickEdit(item)">mdi-pencil</v-icon>
+        <v-icon class="mr-2" @click="onClickDelete(item)">mdi-delete</v-icon>
+      </template>
+    </v-data-table>
+    </v-card>
+
+    <!-- 追加/編集ダイアログ -->
+    <ItemDialog ref="itemDialog"/>
+
+    <!-- 削除ダイアログ -->
+    <DeleteDialog ref="deleteDialog"/>
+
+  </div>
+</template>
+
+<script>
+import ItemDialog from '../components/ItemDialog.vue'
+import DeleteDialog from '../components/DeleteDialog.vue'
+
+export default {
+  name: "Home",
+
+  components: {
+      ItemDialog,
+      DeleteDialog
+  },
+
+  data(){
+    const today = new Date()
+    const year = today.getFullYear()
+    const month = ('0' + (today.getMonth() + 1)).slice(-2)
+
+    return{
+      // ローディング
+      loading: false,
+
+      //月選択メニューの状態
+      menu: false,
+
+      // 検索文字
+      search: '',
+
+      // 選択年月
+      yearMonth: `${year}-${month}`,
+
+      //テーブルに表示させるデータ
+      tableData: [
+        //サンプルデータ
+        { id: 'a34109ed', date: '2020-06-01', title: '支出サンプル', category: '買い物', tags: 'タグ1', income: null, outgo: 2000, memo: 'メモ'},
+        { id: '7c8fa764', date: '2020-06-25', title: '収入サンプル', category: '給料', tags: 'タグ1,タグ2', income: 2000, outgo: null, memo: 'メモ'}
+      ]
+    }
+  },
+
+  computed: {
+    //テーブルのヘッダー設定
+    tableHeaders(){
+      return[
+        { text: '日付', value: 'date', align: 'end' },
+        { text: 'タイトル', value: 'title', sortable: false },
+        { text: 'カテゴリ', value: 'category', sortable: false },
+        { text: 'タグ', value: 'tags', sortable: false },
+        { text: '収入', value: 'income', align: 'end' },
+        { text: '支出', value: 'outgo', align: 'end' },
+        { text: 'メモ', value: 'memo', sortable: false },
+        { text: '操作', value: 'actions', sortable: false },
+      ]
+    },
+
+    //テーブルのフッター設定
+    footerProps(){
+        return { itemsPerPageText: '', itemsPerPageOptions: []}
+    }
+  },
+
+  methods: {
+    // 数字を3桁区切りにして返します。
+    // 受け取った数が null のときは null を返します。
+    separate (num){
+      return num != null ? num.toString().replace(/(\d)(?=(\d{3})+$)/g, '$1,') : null
+    },
+
+    // 追加ボタンがクリックされたとき
+    onClickAdd () {
+      this.$refs.itemDialog.open('add')
+    },
+
+    // 編集ボタンがクリックされたとき
+    onClickEdit (item) {
+      this.$refs.itemDialog.open('edit', item)
+    },
+
+    // 削除ボタンがクリックされたとき
+    onClickDelete (item) {
+      this.$refs.deleteDialog.open(item)
+    }
+
+  }
+
+}
+</script>
