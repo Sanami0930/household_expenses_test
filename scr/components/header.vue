@@ -4,7 +4,7 @@
     <!-- タイトル -->
     <v-spacer></v-spacer>
     <!-- タイトルをセンターへ -->
-    <v-toolbar-title>GAS 家計簿 テスト</v-toolbar-title>
+    <v-toolbar-title>{{ appName }}</v-toolbar-title>
 
     <v-spacer></v-spacer>
     <!-- テーブルアイコンのボタン -->
@@ -20,7 +20,20 @@
 </template>
 
 <script>
+  import { mapState } from 'vuex'
+  // import store from './store'
+
 export default {
-  components: {},
+
+  computed: mapState({
+    appName: state => state.settings.appName
+  }),
+
+  // App インスタンス生成前に一度だけ実行
+  beforeCreate(){
+    this.$store.dispatch('loadSettings')
+  },
+
+  components: {}
 };
 </script>

@@ -1,6 +1,7 @@
 module.exports = {
 
   srcDir: "scr/",
+  mode: 'spa',
 
   css: [
     // プロジェクト内の CSS ファイル
