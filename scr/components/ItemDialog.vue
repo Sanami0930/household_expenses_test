@@ -129,7 +129,7 @@
 </template>
 
 <script>
-import { mapActions, mapGetters } from 'vuex'
+import { mapActions, mapGetters, mapState } from 'vuex'
 
 export default {
   name: 'ItemDialog',
@@ -144,9 +144,6 @@ export default {
 
       //日付選択メニューの表示状態
       menu: false,
-
-      // ローディング状態
-      loading: false,
 
       // ** 操作タイプ 'add' or 'edit' ** //
       actionType: 'add',
@@ -181,19 +178,6 @@ export default {
       // 編集前の年月（編集時に使用）
       beforeYM: '',
 
-      // ** 収支カテゴリ一覧 ** //
-      incomeItems: ['カテ1', 'カテ2'],
-      outgoItems: ['カテ3', 'カテ4'],
-
-      // 選択カテゴリ一覧
-      // categoryItems: [],
-
-      // タグリスト
-      tagItems: ['タグ1', 'タグ2'],
-
-      // 編集前の年月(編集時のみ使用)
-      // beforeYM: '',
-
       // ** バリデーションルール ** //
         // v には現在入力されているデータが入ってる
         // v => /** OKにする条件 */ || /** NGのときに表示させる文字 */
@@ -213,13 +197,17 @@ export default {
   computed: {
 
     ...mapGetters([
-      // 収支カテゴリ
-      'IncomeItems',
-      'OutgoItems',
+      /** 収支カテゴリ */
+      'incomeItems',
+      'outgoItems',
 
-      // タグ
+      /** タグ */
       'tagItems'
     ]),
+
+    ...mapState({
+      loading: state => state.loading.add || state.loading.update
+    }),
 
     // ダイアログのタイトル
     titleText () {
@@ -234,11 +222,11 @@ export default {
 
   methods: {
     ...mapActions([
-      // データの追加
+
       'addAbData',
 
-      // データ更新
       'updateAbData'
+
     ]),
 
     /**
@@ -261,8 +249,8 @@ export default {
     },
 
     // 追加/更新がクリックされたとき
-    onClickAction () {
-      const item ={
+    async onClickAction () {
+      const item = {
         date: this.date,
         title: this.title,
         category: this.category,
@@ -273,13 +261,13 @@ export default {
       }
       item[this.inout] = this.amount || 0
 
-      if(this.actionType === 'add'){
-        item.id = Math.random().toString(36).slice(-8) // ランダムな8文字のIDを生成
-        this.addAbData({ item })
+      if (this.actionType === 'add') {
+        await this.addAbData({ item })
       } else {
         item.id = this.id
-        this.updateAbData({ beforeYM: this.beforeYM, item })
+        await this.updateAbData({ beforeYM: this.beforeYM, item })
       }
+
       this.show = false
     },
 

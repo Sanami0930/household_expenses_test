@@ -9,7 +9,7 @@ module.exports = {
   ],
 
   modules: [
-    // この行を追加して有効化
+    '@nuxtjs/axios',
     '@nuxtjs/vuetify'
   ],
 
@@ -21,6 +21,9 @@ module.exports = {
       accent: '#8c9eff',
       error: '#b71c1c'
     }
+  },
+
+  axios: {
   },
 
   /*

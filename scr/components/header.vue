@@ -16,18 +16,31 @@
     <v-btn icon to="/settings">
       <v-icon>mdi-cog-box</v-icon>
     </v-btn>
+    <v-snackbar v-model="snackbar" color ="error"> {{ errorMessage }} </v-snackbar>
   </v-app-bar>
 </template>
 
 <script>
   import { mapState } from 'vuex'
-  // import store from './store'
 
 export default {
 
+  data () {
+    return {
+      snackbar: false
+    }
+  },
+
   computed: mapState({
-    appName: state => state.settings.appName
+    appName: state => state.settings.appName,
+    errorMessage: state => state.errorMessage
   }),
+
+  watch: {
+    errorMessage() {
+      this.snackbar = true
+    }
+  },
 
   // App インスタンス生成前に一度だけ実行
   beforeCreate(){
